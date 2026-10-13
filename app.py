@@ -32,7 +32,7 @@ st.markdown("""
                 font-weight: 800;
                 letter-spacing: 1px;
                 display: inline-block;
-            ">20647PLV</span>
+            ">M0647CAM</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -45,25 +45,47 @@ elif os.path.exists("patipoli.jpeg"):
 
 st.info("📱 **Uso en Vía Pública**: Selecciona los parámetros detectados para obtener denuncias e inmovilización de forma automática.")
 
+# --- COMPROBACIÓN INICIAL: TIPO ESPECIAL DE VEHÍCULO ---
+tipo_especial = st.radio(
+    "Selecciona la tipología general del vehículo intervenido:",
+    ["Patinete / VMP / Vehículo Ligero", "Bicicleta de Pedaleo Asistido (EPAC / Pedelec)"]
+)
+
+if tipo_especial == "Bicicleta de Pedaleo Asistido (EPAC / Pedelec)":
+    st.success("🚲 **Categoría**: CICLO DE PEDALEO ASISTIDO (EPAC / Pedelec - Norma UNE-EN 15194).")
+    st.markdown("""
+    * **Definición**: Bicicleta equipada con motor eléctrico auxiliar de potencia nominal continua máxima ≤ 250 W, cuya potencia disminuye progresivamente y se interrumpe cuando alcanza los 25 km/h o si el ciclista deja de pedalear.
+    * **Régimen Legal**: Se rige por las normas generales aplicables a las **bicicletas convencionales** (Reglamento General de Circulación).
+    * **Exenciones**: **NO es un VMP ni un vehículo de motor**. Exenta de permiso de conducir, seguro obligatorio de vehículos a motor, registro RNV, placa identificativa y certificado VMP.
+    * **Obligaciones**: Uso de alumbrado en horario nocturno/túneles, prohibición de circular por aceras y uso de casco según normativa aplicable a ciclistas.
+    """)
+    st.stop()  # Finaliza la evaluación para bicicletas EPAC
+
 denuncias = []
 requiere_inmovilizacion = False
 motivos_inmovilizacion = []
 observaciones_penales = []
 
-# --- BLOQUE 1: CARACTERÍSTICAS TÉCNICAS ---
+# --- BLOQUE 1: CARACTERÍSTICAS TÉCNICAS Y VELOCIDAD ---
 st.subheader("1. Características Técnicas del Vehículo")
 
-velocidad_max = st.number_input("Velocidad máxima constatada / medida (km/h):", min_value=0.0, max_value=120.0, value=25.0, step=1.0)
-trucado = st.checkbox("¿Manipulado / Deslimitado / Menú oculto P0(8) / Botón / Interruptor?")
-sillin_sin_autoeq = st.checkbox("¿Dispone de asiento o sillín SIN sistema de autoequilibrado?")
+velocidad_max = st.number_input("Velocidad máxima constatada / medida / declarada (km/h):", min_value=0.0, max_value=120.0, value=25.0, step=1.0)
 
-es_juguete = velocidad_max < 6.0
+# COMPROBACIÓN DE JUGUETE (<= 6 km/h)
+if velocidad_max <= 6.0:
+    st.warning("🧸 **CATEGORÍA: JUGUETE** (Directiva 2009/48/CE / RD 1205/2011).")
+    st.error("❌ **NO ES UN VMP NI UN VPL**. El artefacto no supera la velocidad mínima por diseño de 6 km/h.")
+    st.info("ℹ️ **FIN DE LA EVALUACIÓN**: No se exige ningún requisito de tráfico de VMP (exento de seguro obligatorio, inscripción en RNV, certificado de circulación, etiqueta identificativa y edad mínima).")
+    st.stop()  # Finaliza el script e impide la aparición de más preguntas
+
+trucado = st.checkbox("¿Manipulado / Deslimitado / Menú oculto P0(8) / Botón / Interruptor / App?")
+sillin_sin_autoeq = st.checkbox("¿Dispone de asiento o sillín SIN sistema de autoequilibrado?")
+tiene_acelerador = st.checkbox("¿Dispone de acelerador directo (gatillo/puño) que acciona el motor sin necesidad de impulso humano?")
+
 exceso_prestaciones = velocidad_max > 25.0 or trucado or sillin_sin_autoeq
 
-if es_juguete:
-    st.warning("⚠️ **Categoría**: JUGUETE (Directiva 2009/48/CE). No considerado VMP.")
-elif exceso_prestaciones:
-    st.error("🚨 **RESULTADO TÉCNICO**: VEHÍCULO NO AUTORIZABLE POR EXCESO DE PRESTACIONES / TRUCAJE.")
+if exceso_prestaciones:
+    st.error("🚨 **RESULTADO TÉCNICO**: VEHÍCULO NO AUTORIZABLE COMO VMP POR EXCESO DE PRESTACIONES O TRUCAJE.")
     denuncias.append({
         "concepto": "Circular con vehículo no autorizable que ofrece prestaciones superiores a VMP sin homologación",
         "codigo_dgt": "Opción 1.1.5B (Instrucción 2019/S-149)",
@@ -73,6 +95,27 @@ elif exceso_prestaciones:
     })
     requiere_inmovilizacion = True
     motivos_inmovilizacion.append("Vehículo no autorizable (Exceso de velocidad / Manipulado / Sillín no permitido).")
+
+    # ADVERTENCIA Y ENCUADRE EN EL ÁMBITO PENAL Y CATEGORIZACIÓN COMO CICLOMOTOR / MOTOCICLETA
+    st.markdown("---")
+    st.warning("⚠️ **ADVERTENCIA TÉCNICO-JURÍDICA: POSIBLE CICLOMOTOR O MOTOCICLETA**")
+    
+    es_ciclomotor = velocidad_max <= 45.0
+    tipo_vehiculo_asimilado = "CICLOMOTOR (Categoría L1e-B)" if es_ciclomotor else "MOTOCICLETA (Categoría L3e)"
+    permiso_requerido = "AM" if es_ciclomotor else "A1 / A2 / A"
+
+    st.markdown(f"""
+    * **Clasificación Potencial**: Al contar con **sillín, acelerador directo o prestaciones entre 25 km/h y 45 km/h (o superiores)**, el artefacto excede la definición de VMP y puede ser encuadrado como **{tipo_vehiculo_asimilado}** (Reglamento UE 168/2013 y RGVeh).
+    * **Exigencia de Autorización**: La conducción de este tipo de vehículos requiere estar en posesión de **Permiso de Conducir de la clase {permiso_requerido}** en vigor.
+    * **Incidencia Penal (Art. 384 del Código Penal)**: En caso de que el conductor **carezca de permiso o licencia** (por no haberlo obtenido nunca, pérdida de vigencia o suspensión), los hechos podrían revestir caracteres de **DELITO CONTRA LA SEGURIDAD VIAL (Art. 384 CP)**.
+    * **Requisitos Operativos para la Vía Penal**: Según el Criterio de la Fiscalía de Seguridad Vial (Dictamen 2/2021):
+      1. Se requiere **Informe Técnico / Pericial detallado** de las características del vehículo.
+      2. Es imprescindible realizar una **medición objetiva de velocidad y potencia en banco de ensayo / dinamómetro certificado**.
+      3. Instrucción de **atestado o diligencias motivadas** dirigidas al Juzgado de Guardia.
+    """)
+    observaciones_penales.append(
+        f"OBSERVACIÓN PENAL / TÉCNICA: El vehículo presenta prestaciones superiores a VMP (Velocidad: {velocidad_max} km/h / Sillín: {'SÍ' if sillin_sin_autoeq else 'NO'} / Acelerador directo: {'SÍ' if tiene_acelerador else 'NO'}). Valorable encuadre como {tipo_vehiculo_asimilado}. De carecer el conductor de permiso clase {permiso_requerido}, se requiere medición en dinamómetro e informe pericial para instrucción de Atestado por Art. 384 CP."
+    )
 
 # --- BLOQUE 2: CERTIFICACIÓN Y REGISTRO DGT ---
 st.markdown("---")
@@ -362,7 +405,7 @@ if denuncias or observaciones_penales:
         resumen_texto += f"#{idx} Código: {d['codigo_dgt']}\nConcepto: {d['concepto']}\nCuantía: {d['cuantía']} (Reducida: {d['reducido']})\n\n"
 
     if observaciones_penales:
-        resumen_texto += "--- DILIGENCIAS / OBSERVACIONES EN MATERIA PENAL ---\n"
+        resumen_texto += "--- DILIGENCIAS / OBSERVACIONES EN MATERIA PENAL / TÉCNICA ---\n"
         for obs in observaciones_penales:
             st.warning(obs)
             resumen_texto += f"{obs}\n\n"
