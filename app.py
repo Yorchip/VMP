@@ -59,33 +59,54 @@ velocidad_max = st.number_input("Velocidad máxima constatada / medida / declara
 if velocidad_max <= 6.0:
     st.warning("🧸 **CATEGORÍA: JUGUETE** (Directiva 2009/48/CE / RD 1205/2011).")
     st.error("❌ **NO ES UN VMP NI UN VPL**. El artefacto no supera la velocidad mínima por diseño de 6 km/h.")
-    st.info("ℹ️ **FIN DE LA EVALUACIÓN**: No se exige ningún requisito de tráfico de VMP (exento de seguro obligatorio, inscripción en RNV, certificado de circulación, etiqueta identificativa y edad mínima).")
+    st.info("ℹ️ **FIN DE LA EVALUACIÓN**: No requiere ningún trámite ni autorización de tráfico (exento de seguro obligatorio, inscripción RNV, certificado DGT, matrícula, etiqueta y edad mínima).")
     st.stop()  # Finaliza la evaluación inmediatamente
 
 trucado = st.checkbox("¿Manipulado / Deslimitado / Menú oculto P0(8) / Botón / Interruptor / App?")
 sillin_sin_autoeq = st.checkbox("¿Dispone de asiento o sillín SIN sistema de autoequilibrado?")
 
+es_ciclo_motor_l1ea = False
 tiene_acelerador_directo = False
 tiene_pedales = False
 
 if sillin_sin_autoeq:
     tiene_pedales = st.checkbox("¿Dispone de pedales de tracción humana?")
     if tiene_pedales:
-        funciona_sin_pedalear = st.checkbox("¿Dispone de gatillo / acelerador directo (el motor funciona sin necesidad de pedalear)?")
-        if not funciona_sin_pedalear:
-            # Es una bicicleta EPAC legal
-            st.success("🚲 **Categoría**: BICICLETA DE PEDALEO ASISTIDO (EPAC / Pedelec - Norma UNE-EN 15194).")
+        potencia_gt_250w = st.checkbox("¿La potencia nominal continua supera los 250 W (hasta 1.000 W)?")
+        funciona_sin_pedalear = st.checkbox("¿Dispone de gatillo / acelerador directo (funciona sin necesidad de pedalear)?")
+        
+        # CASO A: EPAC / Pedelec Estándar (<= 250W, sin acelerador directo, corte a 25 km/h)
+        if not potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0:
+            st.success("🚲 **CATEGORÍA DETERMINADA: BICICLETA DE PEDALEO ASISTIDO (EPAC / Pedelec - Norma UNE-EN 15194)**")
             st.markdown("""
-            * **Definición**: Bicicleta equipada con motor auxiliar ≤ 250 W que solo actúa al pedalear y se interrumpe a los 25 km/h.
-            * **Régimen Legal**: Se rige por las normas aplicables a **bicicletas convencionales** (RGCir).
-            * **Exenciones**: **NO es VMP ni vehículo a motor**. Exenta de certificado VMP, seguro obligatorio, registro RNV, placa y permiso de conducir.
+            * **Definición**: Bicicleta equipada con motor auxiliar de potencia nominal continua ≤ 250 W, cuya asistencia se interrumpe a los 25 km/h o si se deja de pedalear.
+            * **Régimen Legal**: Se rige por las normas aplicables a **bicicletas convencionales** (Reglamento General de Circulación).
+            * **Exenciones Absolutas**: **NO es un VMP ni un vehículo a motor**. Exento de Certificado VMP, inscripción RNV, matrícula/etiqueta, seguro obligatorio y permiso de conducir.
             """)
-            st.stop()  # Descarta VMP y finaliza la evaluación para EPAC válida
-        else:
-            tiene_acelerador_directo = True
-            st.warning("⚠️ **Pérdida de categoría EPAC**: Al disponer de acelerador directo/gatillo que acciona el motor sin necesidad de pedalear, pierde la consideración de bicicleta asistida.")
+            st.info("ℹ️ **FIN DE LA EVALUACIÓN**: Al tratarse de una EPAC legal, no procede formular preguntas sobre registro, certificado o matrícula.")
+            st.stop()  # Finaliza la evaluación inmediatamente
 
-exceso_prestaciones = velocidad_max > 25.0 or trucado or sillin_sin_autoeq
+        # CASO B: Ciclo de Motor (Categoría L1e-A) (> 250W a 1000W, asistencia hasta 25 km/h)
+        elif potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0:
+            es_ciclo_motor_l1ea = True
+            st.warning("🛵 **CATEGORÍA DETERMINADA: CICLO DE MOTOR (Categoría L1e-A - Reglamento UE 168/2013)**")
+            st.markdown("""
+            * **Definición**: Ciclo diseñado para pedalear equipado con propulsión auxiliar de potencia nominal continua > 250 W y ≤ 1.000 W, cuyo corte de asistencia se produce a ≤ 25 km/h.
+            * **Requisitos Legales**:
+              1. **Matrícula**: **SÍ EXIGE MATRÍCULA** (placa amarilla equivalente a ciclomotor).
+              2. **Seguro**: **SÍ EXIGE SEGURO** de Responsabilidad Civil (nota: la cuantía sancionadora específica no figura reflejada en la tabla codificada DGT de VMP).
+              3. **Permiso de Conducir**: **NO REQUIERE PERMISO DE CONDUCIR DE NINGÚN TIPO** (a diferencia de los ciclomotores L1e-B).
+            * **Homologación**: Requiere homologación de tipo europea como vehículo Categoría L1e-A.
+            """)
+            observaciones_penales.append(
+                "OBSERVACIÓN TÉCNICA (CICLO DE MOTOR L1e-A): Vehículo con pedales y potencia entre 250W y 1000W. Clasificado como Ciclo de Motor (L1e-A). Exige matrícula de ciclomotor y seguro de RC, pero NO requiere permiso de conducir."
+            )
+        else:
+            if funciona_sin_pedalear:
+                tiene_acelerador_directo = True
+                st.warning("⚠️ **Pérdida de categoría EPAC / L1e-A**: Al disponer de acelerador directo/gatillo que acciona el motor sin necesidad de pedalear, excede la categoría de bicicleta asistida.")
+
+exceso_prestaciones = velocidad_max > 25.0 or trucado or (sillin_sin_autoeq and not es_ciclo_motor_l1ea)
 
 if exceso_prestaciones:
     st.error("🚨 **RESULTADO TÉCNICO**: VEHÍCULO NO AUTORIZABLE COMO VMP POR EXCESO DE PRESTACIONES O TRUCAJE.")
