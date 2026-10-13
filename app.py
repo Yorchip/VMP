@@ -88,12 +88,19 @@ fecha_comercializacion = st.radio(
 es_posterior_2024 = "A partir del 22/01/2024" in fecha_comercializacion
 
 if es_posterior_2024:
-    st.caption("ℹ️ *Vehículo posterior a 22/01/2024: Requiere Certificado, Registro RNV y Etiqueta DGT (jerarquía no acumulativa).*")
+    st.caption("ℹ️ *Vehículo posterior a 22/01/2024: La inscripción en RNV requiere certificado de origen previo.*")
     tiene_certificado = st.checkbox("¿Tiene Certificado de Circulación DGT?", value=True)
-    tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=True)
-    tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=True)
+    
+    if tiene_certificado:
+        tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=True)
+        tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=True) if tiene_registro else False
+    else:
+        # Un vehículo posterior al 22/01/2024 sin certificado no puede estar inscrito en el RNV
+        tiene_registro = False
+        tiene_etiqueta = st.checkbox("¿Exhibe Etiqueta / Placa Identificativa?", value=False)
+        st.caption("⚠️ *Al no disponer de certificado, un VMP posterior a 22/01/2024 no figura en el RNV.*")
 
-    # Evaluación de jerarquía
+    # Evaluación de jerarquía (absorción de infracciones)
     if not tiene_certificado:
         denuncias.append({
             "concepto": "No disponer de certificado de circulación obligatorio para VMP (comercializado tras 22/01/2024)",
@@ -119,11 +126,12 @@ if es_posterior_2024:
             "inmoviliza": "NO"
         })
 else:
-    st.caption("✅ *Vehículo anterior a 22/01/2024: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro RNV y Etiqueta.*")
-    tiene_certificado = False
+    st.caption("✅ *Vehículo anterior a 22/01/2024: Exento de Certificado hasta 22/01/2027, pero puede estar inscrito en RNV y exhibir etiqueta.*")
+    tiene_certificado = False  # Exento de certificado por régimen transitorio
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
 
+    # Evaluación de jerarquía para pre-2024
     if not tiene_registro:
         denuncias.append({
             "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
@@ -141,7 +149,7 @@ else:
             "inmoviliza": "NO"
         })
 
-# Detección de anomalía penal: Exhibe pegatina pero NO figura en RNV
+# Detección de anomalía penal: Exhibe pegatina imitando la DGT pero NO figura en RNV
 if not tiene_registro and tiene_etiqueta:
     st.error("🚨 **ALERTA DE SEGURIDAD / INCIDENCIA DOCUMENTAL**: El vehículo exhibe pegatina identificativa pero NO consta inscrito en el RNV.")
     observaciones_penales.append(
