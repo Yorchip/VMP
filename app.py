@@ -9,6 +9,36 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Contador persistente de intervenciones
+counter_file = "contador_intervenciones.txt"
+contador = 0
+if os.path.exists(counter_file):
+    try:
+        with open(counter_file, "r") as f:
+            contador = int(f.read().strip())
+    except Exception:
+        contador = 0
+
+if "intervencion_contada" not in st.session_state:
+    contador += 1
+    st.session_state["intervencion_contada"] = True
+    try:
+        with open(counter_file, "w") as f:
+            f.write(str(contador))
+    except Exception:
+        pass
+
+def mostrar_footer(num_contador):
+    """Muestra el disclaimer y el contador discreto al final de la página."""
+    st.markdown("---")
+    st.caption("⚠️ **Aviso Legal / Disclaimer**: La información proporcionada por esta herramienta es de carácter orientativo. El agente actuante deberá verificar la calificación jurídica y las medidas cautelares aplicables conforme a la normativa vigente y a las instrucciones/protocolos internos dictados por su respectiva Jefatura de Policía Local.")
+    st.markdown(
+        f"<div style='text-align: center; color: #94a3b8; font-size: 0.78rem; margin-top: 8px; margin-bottom: 12px;'>"
+        f"👥 {num_contador} intervenciones facilitadas"
+        f"</div>",
+        unsafe_allow_html=True
+    )
+
 # 2. Cabecera Visual Moderna
 st.markdown("""
     <div style="
@@ -60,6 +90,7 @@ if velocidad_max <= 6.0:
     st.warning("🧸 **CATEGORÍA: JUGUETE** (Directiva 2009/48/CE / RD 1205/2011).")
     st.error("❌ **NO ES UN VMP NI UN VPL**. El artefacto no supera la velocidad mínima de 6 km/h por diseño.")
     st.info("ℹ️ **FIN DE LA EVALUACIÓN**: Al tratarse de un juguete, no requiere ningún trámite ni autorización de tráfico (exento de seguro obligatorio, inscripción RNV, certificado DGT, matrícula, etiqueta y edad mínima).")
+    mostrar_footer(contador)
     st.stop()  # Finaliza la evaluación inmediatamente
 
 trucado = st.checkbox("¿Manipulado / Deslimitado / Menú oculto P0(8) / Botón / Interruptor / App?")
@@ -85,6 +116,7 @@ if sillin_sin_autoeq:
             * **Exenciones Absolutas**: **NO es un VMP ni un vehículo a motor**. Al igual que una bicicleta convencional, **no requiere nada más** (exenta de Certificado VMP, inscripción RNV, matrícula/etiqueta, seguro obligatorio y permiso de conducir).
             """)
             st.info("ℹ️ **FIN DE LA EVALUACIÓN**: Al ser una EPAC/bicicleta convencional, no se continúa con preguntas de VMP/VPL.")
+            mostrar_footer(contador)
             st.stop()  # Parada inmediata para EPAC
 
         # CASO 2: Ciclo de Motor (Categoría L1e-A) (> 250W a 1000W, sin acelerador directo, asistencia <= 25 km/h)
@@ -100,6 +132,7 @@ if sillin_sin_autoeq:
             * **Homologación**: Requiere homologación de tipo europea como vehículo Categoría L1e-A.
             """)
             st.info("ℹ️ **FIN DE LA EVALUACIÓN**: Al determinarse como Ciclo de Motor (L1e-A), no se continúa con preguntas de VMP/VPL.")
+            mostrar_footer(contador)
             st.stop()  # Parada inmediata para Ciclo de Motor
         else:
             if funciona_sin_pedalear:
@@ -146,10 +179,10 @@ if exceso_prestaciones:
         )
     else:
         # VEHÍCULO DE ORIGEN NO VMP (NO TRUCADO): NO SE CONTINÚA CON PREGUNTAS VMP/VPL
-        st.error(f"🚨 **CATEGORÍA DETERMINADA: {tipo_vehiculo_asimilado} (NO VMP)**")
+        st.error("🚨 **CATEGORÍA DETERMINADA: NO VMP**")
         st.markdown(f"""
-        * **Situación**: Por sus características de fabricación (asiento/sillín {'con acelerador directo' if tiene_acelerador_directo else ''} o velocidad por diseño > 25 km/h), el vehículo no es un VMP, sino que procede **comprobar si es equiparable a {tipo_vehiculo_asimilado}**.
-        * **Comprobar denuncias que procedan como Ciclomotor / Vehículo a Motor**:
+        * **Situación**: Por sus características de fabricación (asiento/sillín {'con acelerador directo' if tiene_acelerador_directo else ''} o velocidad por diseño > 25 km/h), el vehículo **NO es un VMP**, procediendo **comprobar si puede ser equiparable a {tipo_vehiculo_asimilado}**.
+        * **Comprobar denuncias que procedan si se equipara a Ciclomotor / Vehículo a Motor**:
           1. **Vehículo No Autorizable / Sin Homologación**: Opción 1.1.5B (500 € + Inmovilización).
           2. **Carecer de Certificado de Circulación / Homologación de Ciclomotor**.
           3. **Carecer de Matrícula** (placa amarilla).
@@ -173,7 +206,7 @@ if exceso_prestaciones:
             "inmoviliza": "SÍ"
         })
         requiere_inmovilizacion = True
-        motivos_inmovilizacion.append(f"Vehículo equipado como {tipo_vehiculo_asimilado} sin homologar y falta de autorización.")
+        motivos_inmovilizacion.append(f"Vehículo FUERA DE NORMA (posible {tipo_vehiculo_asimilado} según verificación técnica).")
 
         observaciones_penales.append(
             f"OBSERVACIÓN PENAL / TÉCNICA: Vehículo fabricado como {tipo_vehiculo_asimilado} no VMP. Comprobar si puede ser equiparable a {tipo_vehiculo_asimilado} a efectos sancionadores y penales. Proceden denuncias por carecer de certificado de circulación, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, valorar diligencias por Art. 384 CP previa medición en dinamómetro."
@@ -187,7 +220,7 @@ if exceso_prestaciones:
             st.write(f"- {mot}")
 
         st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO A VERIFICAR EQUIPARACIÓN A CICLOMOTOR (20647PLV)\nInmovilización: SÍ\n\n"
+        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO FUERA DE NORMA (20647PLV)\nInmovilización: SÍ\n\n"
         for idx, d in enumerate(denuncias, 1):
             with st.expander(f"#{idx} [{d['codigo_dgt']}] - {d['cuantía']}"):
                 st.write(f"**Concepto**: {d['concepto']}")
@@ -203,6 +236,7 @@ if exceso_prestaciones:
             resumen_texto += f"{obs}\n\n"
 
         st.text_area("📋 Resumen para copiar/pegar en aviso o atestado:", value=resumen_texto, height=220)
+        mostrar_footer(contador)
         st.stop()  # No seguir con preguntas de VMP/VPL
 
 # --- BLOQUE 2: CERTIFICACIÓN Y REGISTRO DGT ---
@@ -501,3 +535,6 @@ if denuncias or observaciones_penales:
     st.text_area("📋 Resumen para copiar/pegar en aviso o atestado:", value=resumen_texto, height=220)
 else:
     st.info("👌 No se han registrado infracciones con los datos seleccionados.")
+
+# Pie de página con disclaimer y contador al final de todo
+mostrar_footer(contador)
