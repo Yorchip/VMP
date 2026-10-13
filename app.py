@@ -50,6 +50,7 @@ st.info("📱 **Uso en Vía Pública**: Selecciona los parámetros detectados pa
 denuncias = []
 requiere_inmovilizacion = False
 motivos_inmovilizacion = []
+observaciones_penales = []
 
 # --- BLOQUE 1: CARACTERÍSTICAS TÉCNICAS ---
 st.subheader("1. Características Técnicas del Vehículo")
@@ -92,7 +93,7 @@ if es_posterior_2024:
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=True)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=True)
 
-    # Evaluación de jerarquía no acumulativa (absorción de infracciones)
+    # Evaluación de jerarquía
     if not tiene_certificado:
         denuncias.append({
             "concepto": "No disponer de certificado de circulación obligatorio para VMP (comercializado tras 22/01/2024)",
@@ -119,11 +120,10 @@ if es_posterior_2024:
         })
 else:
     st.caption("✅ *Vehículo anterior a 22/01/2024: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro RNV y Etiqueta.*")
-    tiene_certificado = False  # Exento de certificado de circulación
+    tiene_certificado = False
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
 
-    # Evaluación de jerarquía para pre-2024
     if not tiene_registro:
         denuncias.append({
             "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
@@ -140,6 +140,13 @@ else:
             "reducido": "40 €",
             "inmoviliza": "NO"
         })
+
+# Detección de anomalía penal: Exhibe pegatina pero NO figura en RNV
+if not tiene_registro and tiene_etiqueta:
+    st.error("🚨 **ALERTA DE SEGURIDAD / INCIDENCIA DOCUMENTAL**: El vehículo exhibe pegatina identificativa pero NO consta inscrito en el RNV.")
+    observaciones_penales.append(
+        "OBSERVACIÓN PENAL: El vehículo exhibe etiqueta identificativa imitando la oficial de la DGT sin constar alta ni registro en el RNV. Proceden diligencias informativas / atestado por presunto Delito de Falsedad Documental (Arts. 392/393 del Código Penal) con intervención cautelar del distintivo."
+    )
 
 # --- BLOQUE 3: SEGURO OBLIGATORIO ---
 st.markdown("---")
@@ -332,8 +339,8 @@ if requiere_inmovilizacion:
 else:
     st.success("🟢 **NO PROCEDE INMOVILIZACIÓN DEL VEHÍCULO**")
 
-if denuncias:
-    st.subheader(f"Infracciones Registradas ({len(denuncias)}):")
+if denuncias or observaciones_penales:
+    st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
     resumen_texto = "ACTA DE INTERVENCIÓN VMP - POLICÍA LOCAL (M0647CAM)\n"
     resumen_texto += f"Inmovilización: {'SÍ' if requiere_inmovilizacion else 'NO'}\n\n"
 
@@ -347,6 +354,12 @@ if denuncias:
         
         resumen_texto += f"#{idx} Código: {d['codigo_dgt']}\nConcepto: {d['concepto']}\nCuantía: {d['cuantía']} (Reducida: {d['reducido']})\n\n"
 
-    st.text_area("📋 Resumen para copiar/pegar en aviso o atestado:", value=resumen_texto, height=180)
+    if observaciones_penales:
+        resumen_texto += "--- DILIGENCIAS / OBSERVACIONES EN MATERIA PENAL ---\n"
+        for obs in observaciones_penales:
+            st.warning(obs)
+            resumen_texto += f"{obs}\n\n"
+
+    st.text_area("📋 Resumen para copiar/pegar en aviso o atestado:", value=resumen_texto, height=220)
 else:
     st.info("👌 No se han registrado infracciones con los datos seleccionados.")
