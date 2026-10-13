@@ -179,7 +179,7 @@ if exceso_prestaciones:
             f"OBSERVACIÓN PENAL / TÉCNICA: Vehículo fabricado como {tipo_vehiculo_asimilado} no VMP. Comprobar si puede ser equiparable a {tipo_vehiculo_asimilado} a efectos sancionadores y penales. Proceden denuncias por carecer de certificado de circulación, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, valorar diligencias por Art. 384 CP previa medición en dinamómetro."
         )
 
-        # Mostrar resultado final e inmovilización para Ciclomotor no trucado, y NO seguir con VMP/VPL
+        # Mostrar resultado final e inmovilización para Ciclomotor no trucado
         st.markdown("---")
         st.header("📋 Resultado de la Intervención")
         st.error("⛔ **PROCEDE LA INMOVILIZACIÓN Y TRASLADO AL DEPÓSITO MUNICIPAL**")
@@ -479,7 +479,7 @@ else:
 
 if denuncias or observaciones_penales:
     st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-    resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO A VERIFICAR EQUIPARACIÓN A CICLOMOTOR (20647PLV)\n"
+    resumen_texto = "ACTA DE INTERVENCIÓN VMP - POLICÍA LOCAL (20647PLV)\n"
     resumen_texto += f"Inmovilización: {'SÍ' if requiere_inmovilizacion else 'NO'}\n\n"
 
     for idx, d in enumerate(denuncias, 1):
