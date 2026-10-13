@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 
-# 1. Configuración de página para móviles y ordenadores
+# 1. Configuración de página para móviles
 st.set_page_config(
     page_title="VMP Policial - Asistente de Intervención",
     page_icon="🚔",
@@ -9,26 +9,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Cabecera Visual Moderna (Tarjeta Operativa)
+# 2. Cabecera Visual Moderna
 st.markdown("""
     <div style="
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 18px;
+        padding: 14px;
         border-radius: 12px 12px 0 0;
         color: white;
         text-align: center;
     ">
-        <h2 style="margin: 0; font-size: 1.4rem; color: #ffffff; letter-spacing: 1px;">🚔 POLICÍA LOCAL</h2>
-        <p style="margin: 5px 0 0 0; font-size: 0.95rem; color: #93c5fd; font-weight: 600; text-transform: uppercase;">
+        <h3 style="margin: 0; font-size: 1.3rem; color: #ffffff; letter-spacing: 1px;">🚔 POLICÍA LOCAL</h3>
+        <p style="margin: 3px 0 0 0; font-size: 0.90rem; color: #93c5fd; font-weight: 600; text-transform: uppercase;">
             Control de Movilidad Urbana y VMP
         </p>
-        <div style="margin-top: 10px;">
+        <div style="margin-top: 6px;">
             <span style="
                 background-color: #f59e0b;
                 color: #0f172a;
-                padding: 4px 12px;
+                padding: 3px 10px;
                 border-radius: 6px;
-                font-size: 0.85rem;
+                font-size: 0.80rem;
                 font-weight: 800;
                 letter-spacing: 1px;
                 display: inline-block;
@@ -37,19 +37,21 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Cargar la imagen del patinete si existe en el directorio
-if os.path.exists("patipoli.jpg"):
-    st.image("patipoli.jpg", use_container_width=True)
-elif os.path.exists("patipoli.jpeg"):
-    st.image("patipoli.jpeg", use_container_width=True)
+# Imagen del patinete compacta y centrada
+col_left, col_img, col_right = st.columns([1, 1.2, 1])
+with col_img:
+    if os.path.exists("patipoli.jpg"):
+        st.image("patipoli.jpg", width=180)
+    elif os.path.exists("patipoli.jpeg"):
+        st.image("patipoli.jpeg", width=180)
 
-st.info("📱 **Uso en Vía Pública**: Selecciona las características detectadas en la intervención para obtener el desglose de denuncias e inmovilización.")
+st.info("📱 **Uso en Vía Pública**: Selecciona los parámetros detectados para obtener denuncias e inmovilización de forma automática.")
 
 denuncias = []
 requiere_inmovilizacion = False
 motivos_inmovilizacion = []
 
-# --- BLOQUE 1: CARACTERÍSTICAS TÉCNICAS Y PRESTACIONES ---
+# --- BLOQUE 1: CARACTERÍSTICAS TÉCNICAS ---
 st.subheader("1. Características Técnicas del Vehículo")
 
 velocidad_max = st.number_input("Velocidad máxima constatada / medida (km/h):", min_value=0.0, max_value=120.0, value=25.0, step=1.0)
@@ -79,12 +81,15 @@ st.subheader("2. Certificación y Registro DGT")
 
 fecha_comercializacion = st.radio(
     "Fecha de comercialización del vehículo:",
-    ["Hasta el 21/01/2024 (Régimen Transitorio hasta 2027)", "A partir del 22/01/2024 (Certificación Obligatoria)"]
+    ["Hasta el 21/01/2024 (Régimen Transitorio hasta 22/01/2027)", "A partir del 22/01/2024 (Certificación Obligatoria)"]
 )
 
-if "A partir del 22/01/2024" in fecha_comercializacion:
-    tiene_certificado = st.checkbox("¿Cuenta con Certificado de Circulación DGT?", value=True)
-    tiene_registro = st.checkbox("¿Está inscrito en el Registro de Vehículos Ligeros?", value=True)
+es_posterior_2024 = "A partir del 22/01/2024" in fecha_comercializacion
+
+if es_posterior_2024:
+    st.caption("ℹ️ *Vehículo moderno: Requiere Certificado, Registro RNV y Etiqueta.*")
+    tiene_certificado = st.checkbox("¿Tiene Certificado de Circulación DGT?", value=True)
+    tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros?", value=True)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=True)
 
     if not tiene_certificado:
@@ -95,25 +100,30 @@ if "A partir del 22/01/2024" in fecha_comercializacion:
             "reducido": "100 €",
             "inmoviliza": "NO"
         })
-    if not tiene_registro:
-        denuncias.append({
-            "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
-            "codigo_dgt": "VEH 22 B-2-5B",
-            "cuantía": "100 €",
-            "reducido": "50 €",
-            "inmoviliza": "NO"
-        })
-    if not tiene_etiqueta:
-        denuncias.append({
-            "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) de la DGT",
-            "codigo_dgt": "VEH 22 B-2-5C",
-            "cuantía": "80 €",
-            "reducido": "40 €",
-            "inmoviliza": "NO"
-        })
 else:
-    st.success("✅ VMP antiguo (hasta 21/01/2024): Exento de certificado obligatorio hasta el 22/01/2027.")
-    tiene_certificado, tiene_registro, tiene_etiqueta = False, False, False
+    st.caption("✅ *Vehículo antiguo: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro y Etiqueta.*")
+    tiene_certificado = False  # Exento de certificado de circulación
+    tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
+    tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
+
+# Evaluación de Registro y Etiqueta comunes para ambos casos
+if not tiene_registro:
+    denuncias.append({
+        "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
+        "codigo_dgt": "VEH 22 B-2-5B",
+        "cuantía": "100 €",
+        "reducido": "50 €",
+        "inmoviliza": "NO"
+    })
+
+if not tiene_etiqueta:
+    denuncias.append({
+        "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) de la DGT",
+        "codigo_dgt": "VEH 22 B-2-5C",
+        "cuantía": "80 €",
+        "reducido": "40 €",
+        "inmoviliza": "NO"
+    })
 
 # --- BLOQUE 3: SEGURO OBLIGATORIO (Ley 5/2025 y SAC 2026/13) ---
 st.markdown("---")
@@ -124,6 +134,7 @@ estado_seguro = st.selectbox("Estado del Seguro de Responsabilidad Civil:", ["Co
 
 if estado_seguro != "Con Seguro Vigente":
     if peso_mom > 25.0 and velocidad_max > 14.0:
+        # VMP Pesado -> Asimilado a vehículo a motor (Ley RC)
         if estado_seguro == "Circular Sin Seguro":
             denuncias.append({
                 "concepto": "Circular sin seguro obligatorio (VMP > 25 kg asimilado a vehículo a motor)",
@@ -143,10 +154,13 @@ if estado_seguro != "Con Seguro Vigente":
         requiere_inmovilizacion = True
         motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VMP > 25 kg.")
     else:
-        if tiene_certificado and tiene_registro and tiene_etiqueta:
+        # VPL (< 25 kg): Exige TRIPLE REQUISITO (Certificado + Registro + Etiqueta) según SAC 2026/13
+        cumple_triple_requisito = tiene_certificado and tiene_registro and tiene_etiqueta
+
+        if cumple_triple_requisito:
             if estado_seguro == "Circular Sin Seguro":
                 denuncias.append({
-                    "concepto": "Circular sin seguro obligatorio (VPL < 25 kg registrado)",
+                    "concepto": "Circular sin seguro obligatorio (VPL < 25 kg registrado y certificado)",
                     "codigo_dgt": "SDA 5A",
                     "cuantía": "300 €",
                     "reducido": "150 €",
@@ -154,18 +168,18 @@ if estado_seguro != "Con Seguro Vigente":
                 })
             else:
                 denuncias.append({
-                    "concepto": "Carecer de seguro obligatorio (VPL < 25 kg registrado)",
+                    "concepto": "Carecer de seguro obligatorio (VPL < 25 kg registrado y certificado)",
                     "codigo_dgt": "SDA 5B",
                     "cuantía": "200 €",
                     "reducido": "100 €",
                     "inmoviliza": "SÍ"
                 })
             requiere_inmovilizacion = True
-            motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VPL registrado.")
+            motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VPL certificado y registrado.")
         else:
-            st.warning("ℹ️ **Exento de denuncia de seguro**: Al no cumplir la triple certificación/registro previa, no procede denuncia por Ley de Seguro (Instrucción SAC 2026/13).")
+            st.warning("ℹ️ **Exento de denuncia de seguro**: Según la Instrucción SAC 2026/13, la sanción por seguro en VPL (< 25 kg) requiere cumplir simultáneamente los 3 requisitos (Certificación + Registro + Etiqueta). Al faltar al menos uno de ellos, NO procede sancionar por seguro.")
 
-# --- BLOQUE 4: INFRACCIONES DE CIRCULACIÓN (RD 518/2026 / SANC 2026/27) ---
+# --- BLOQUE 4: INFRACCIONES DE CIRCULACIÓN (SANC 2026/27) ---
 st.markdown("---")
 st.subheader("4. Conducta del Conductor (Codificación SANC 2026/27)")
 
@@ -271,13 +285,12 @@ for inf in infracciones_conducta:
         requiere_inmovilizacion = True
         motivos_inmovilizacion.append("Conductor bajo los efectos de drogas o negativa.")
 
-# --- BLOQUE 5: RESULTADO DE LA INTERVENCIÓN Y ACTA ---
+# --- BLOQUE 5: RESULTADO DE LA INTERVENCIÓN ---
 st.markdown("---")
 st.header("📋 Resultado de la Intervención")
 
 if requiere_inmovilizacion:
     st.error("⛔ **PROCEDE LA INMOVILIZACIÓN Y TRASLADO AL DEPÓSITO MUNICIPAL**")
-    st.write("**Motivos de inmovilización:**")
     for mot in motivos_inmovilizacion:
         st.write(f"- {mot}")
 else:
