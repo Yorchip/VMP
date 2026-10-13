@@ -121,10 +121,12 @@ if es_posterior_2024:
             "inmoviliza": "NO"
         })
 else:
-    st.caption("✅ *Vehículo anterior a 22/01/2024: Exento de Certificado hasta 22/01/2027, pero sujeto a Registro RNV y Etiqueta.*")
-    tiene_certificado = False
+    st.caption("✅ *Vehículo anterior a 22/01/2024: La inscripción otorga Certificado Provisional DGT y placa Serie 'B'.*")
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
-    tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
+    tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa Serie 'B')?", value=False)
+    
+    # La inscripción previa a 2024 otorga el certificado provisional DGT
+    tiene_certificado = tiene_registro
 
     # Evaluación de jerarquía para pre-2024
     if not tiene_registro:
@@ -137,7 +139,7 @@ else:
         })
     elif not tiene_etiqueta:
         denuncias.append({
-            "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) en VMP inscrito",
+            "concepto": "No disponer o no exhibir la etiqueta identificativa (placa Serie 'B') en VMP inscrito",
             "codigo_dgt": "VEH 22 B-2-5C",
             "cuantía": "80 €",
             "reducido": "40 €",
@@ -184,7 +186,7 @@ if estado_seguro != "Con Seguro Vigente":
         if cumple_triple_requisito:
             if estado_seguro == "Circular Sin Seguro":
                 denuncias.append({
-                    "concepto": "Circular sin seguro obligatorio (VPL < 25 kg registrado y certificado)",
+                    "concepto": "Circular sin seguro obligatorio (VPL registrado con Placa DGT/Serie B)",
                     "codigo_dgt": "SDA 5A",
                     "cuantía": "300 €",
                     "reducido": "150 €",
@@ -192,16 +194,16 @@ if estado_seguro != "Con Seguro Vigente":
                 })
             else:
                 denuncias.append({
-                    "concepto": "Carecer de seguro obligatorio (VPL < 25 kg registrado y certificado)",
+                    "concepto": "Carecer de seguro obligatorio (VPL registrado con Placa DGT/Serie B)",
                     "codigo_dgt": "SDA 5B",
                     "cuantía": "200 €",
                     "reducido": "100 €",
                     "inmoviliza": "SÍ"
                 })
             requiere_inmovilizacion = True
-            motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VPL certificado y registrado.")
+            motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VPL registrado y matriculado.")
         else:
-            st.warning("ℹ️ **Exento de denuncia de seguro**: Según la Instrucción SAC 2026/13, la sanción por seguro en VPL (< 25 kg) requiere cumplir simultáneamente los 3 requisitos (Certificación + Registro + Etiqueta). Al faltar al menos uno de ellos, NO procede sancionar por seguro.")
+            st.warning("ℹ️ **Exento de denuncia de seguro**: Según la Instrucción SAC 2026/13, la sanción por seguro en VPL (< 25 kg) requiere cumplir simultáneamente los requisitos (Certificado/Provisional + Registro + Etiqueta/Placa 'B'). Al faltar la inscripción o la etiqueta, NO procede sancionar por seguro.")
 
 # --- BLOQUE 4: INFRACCIONES DE CIRCULACIÓN Y EQUIPAMIENTO TÉCNICO ---
 st.markdown("---")
