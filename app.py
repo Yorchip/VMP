@@ -102,11 +102,10 @@ if es_posterior_2024:
         })
 else:
     st.caption("✅ *Vehículo antiguo: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro y Etiqueta.*")
-    tiene_certificado = False  # Exento de certificado de circulación
+    tiene_certificado = False
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
 
-# Evaluación de Registro y Etiqueta comunes para ambos casos
 if not tiene_registro:
     denuncias.append({
         "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
@@ -125,7 +124,7 @@ if not tiene_etiqueta:
         "inmoviliza": "NO"
     })
 
-# --- BLOQUE 3: SEGURO OBLIGATORIO (Ley 5/2025 y SAC 2026/13) ---
+# --- BLOQUE 3: SEGURO OBLIGATORIO ---
 st.markdown("---")
 st.subheader("3. Requisitos de Seguro Obligatorio")
 
@@ -134,7 +133,6 @@ estado_seguro = st.selectbox("Estado del Seguro de Responsabilidad Civil:", ["Co
 
 if estado_seguro != "Con Seguro Vigente":
     if peso_mom > 25.0 and velocidad_max > 14.0:
-        # VMP Pesado -> Asimilado a vehículo a motor (Ley RC)
         if estado_seguro == "Circular Sin Seguro":
             denuncias.append({
                 "concepto": "Circular sin seguro obligatorio (VMP > 25 kg asimilado a vehículo a motor)",
@@ -154,7 +152,6 @@ if estado_seguro != "Con Seguro Vigente":
         requiere_inmovilizacion = True
         motivos_inmovilizacion.append("Falta de Seguro Obligatorio en VMP > 25 kg.")
     else:
-        # VPL (< 25 kg): Exige TRIPLE REQUISITO (Certificado + Registro + Etiqueta) según SAC 2026/13
         cumple_triple_requisito = tiene_certificado and tiene_registro and tiene_etiqueta
 
         if cumple_triple_requisito:
@@ -179,18 +176,22 @@ if estado_seguro != "Con Seguro Vigente":
         else:
             st.warning("ℹ️ **Exento de denuncia de seguro**: Según la Instrucción SAC 2026/13, la sanción por seguro en VPL (< 25 kg) requiere cumplir simultáneamente los 3 requisitos (Certificación + Registro + Etiqueta). Al faltar al menos uno de ellos, NO procede sancionar por seguro.")
 
-# --- BLOQUE 4: INFRACCIONES DE CIRCULACIÓN (SANC 2026/27) ---
+# --- BLOQUE 4: INFRACCIONES DE CIRCULACIÓN Y EQUIPAMIENTO TÉCNICO ---
 st.markdown("---")
-st.subheader("4. Conducta del Conductor (Codificación SANC 2026/27)")
+st.subheader("4. Conducta del Conductor y Equipamiento Técnico (Anexo XXI RGVeh / SANC 2026/27)")
+
+st.warning("💡 **Aviso de Vacatio Legis (Alumbrado)**: La obligación de llevar siempre encendido el alumbrado a todas horas (día y noche) del RD 518/2026 **entrará en vigor el 1 de octubre de 2027**. Actualmente solo es obligatorio de noche, en túneles o con escasa visibilidad.")
 
 infracciones_conducta = st.multiselect(
-    "Selecciona infracciones observadas en la intervención:",
+    "Selecciona infracciones u anomalías observadas en la intervención:",
     [
+        "Fallo / Deficiencia en Sistema de Frenado (Anexo XXI - VEH 22 B-2-5E)",
+        "Carecer o no funcionar Timbre / Dispositivo sonoro o Pata de Cabra (Anexo XXI - VEH 22 B-2-5F)",
         "Conductor menor de 15 años de edad (CIR 155 3 5A)",
         "Sin Casco de protección homologado o mal abrochado (CIR 118 3 5D)",
         "Sin prenda/elemento luminoso o reflectante visible a 150m de noche (CIR 118 3 5E)",
         "Circular por Vía Interurbana, Travesía o Túnel prohibido (CIR 038 4 5B)",
-        "Circular sin alumbrado obligatorio (CIR 155 5 5A)",
+        "Circular de noche/túnel sin alumbrado obligatorio (CIR 155 5 5A)",
         "Circular por la acera o zona peatonal (CIR 152 1 5A / CIR 121.5)",
         "Uso de Teléfono Móvil o Auriculares conectados (CIR 018 2 5C)",
         "Transportar a un segundo pasajero en VMP monoplaza (CIR 012 2 5A)",
@@ -200,7 +201,25 @@ infracciones_conducta = st.multiselect(
 )
 
 for inf in infracciones_conducta:
-    if "menor de 15 años" in inf:
+    if "Sistema de Frenado" in inf:
+        denuncias.append({
+            "concepto": "Circular con VMP que presenta deficiencias graves o ineficacia total en el sistema de frenado (Anexo XXI RGVeh)",
+            "codigo_dgt": "VEH 22 B-2-5E",
+            "cuantía": "200 €",
+            "reducido": "100 €",
+            "inmoviliza": "SÍ"
+        })
+        requiere_inmovilizacion = True
+        motivos_inmovilizacion.append("Deficiencia grave en la seguridad activa (Fallo total o grave en el sistema de frenado).")
+    elif "Timbre" in inf:
+        denuncias.append({
+            "concepto": "Carecer de dispositivo sonoro (timbre) o sistema de estabilización (pata de cabra) exigido en el Anexo XXI del RGVeh",
+            "codigo_dgt": "VEH 22 B-2-5F",
+            "cuantía": "80 €",
+            "reducido": "40 €",
+            "inmoviliza": "NO"
+        })
+    elif "menor de 15 años" in inf:
         denuncias.append({
             "concepto": "Conducir un vehículo de movilidad personal un menor de 15 años",
             "codigo_dgt": "CIR 155 3 5A (Art. 155.3 RGCir)",
@@ -234,7 +253,7 @@ for inf in infracciones_conducta:
         })
     elif "sin alumbrado" in inf:
         denuncias.append({
-            "concepto": "Circular con VMP sin llevar encendido el alumbrado obligatorio",
+            "concepto": "Circular con VMP sin llevar encendido el alumbrado obligatorio (noche/túnel)",
             "codigo_dgt": "CIR 155 5 5A (Art. 155.5 RGCir)",
             "cuantía": "200 €",
             "reducido": "100 €",
