@@ -87,11 +87,12 @@ fecha_comercializacion = st.radio(
 es_posterior_2024 = "A partir del 22/01/2024" in fecha_comercializacion
 
 if es_posterior_2024:
-    st.caption("ℹ️ *Vehículo moderno: Requiere Certificado, Registro RNV y Etiqueta.*")
+    st.caption("ℹ️ *Vehículo posterior a 22/01/2024: Requiere Certificado, Registro RNV y Etiqueta DGT (jerarquía no acumulativa).*")
     tiene_certificado = st.checkbox("¿Tiene Certificado de Circulación DGT?", value=True)
-    tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros?", value=True)
+    tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=True)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=True)
 
+    # Evaluación de jerarquía no acumulativa (absorción de infracciones)
     if not tiene_certificado:
         denuncias.append({
             "concepto": "No disponer de certificado de circulación obligatorio para VMP (comercializado tras 22/01/2024)",
@@ -100,29 +101,45 @@ if es_posterior_2024:
             "reducido": "100 €",
             "inmoviliza": "NO"
         })
+    elif not tiene_registro:
+        denuncias.append({
+            "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
+            "codigo_dgt": "VEH 22 B-2-5B",
+            "cuantía": "100 €",
+            "reducido": "50 €",
+            "inmoviliza": "NO"
+        })
+    elif not tiene_etiqueta:
+        denuncias.append({
+            "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) de la DGT en VMP inscrito",
+            "codigo_dgt": "VEH 22 B-2-5C",
+            "cuantía": "80 €",
+            "reducido": "40 €",
+            "inmoviliza": "NO"
+        })
 else:
-    st.caption("✅ *Vehículo antiguo: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro y Etiqueta.*")
-    tiene_certificado = False
+    st.caption("✅ *Vehículo anterior a 22/01/2024: Exento de Certificado de Circulación hasta el 22/01/2027, pero sujeto a Registro RNV y Etiqueta.*")
+    tiene_certificado = False  # Exento de certificado de circulación
     tiene_registro = st.checkbox("¿Inscrito en el Registro de Vehículos Ligeros (RNV)?", value=False)
     tiene_etiqueta = st.checkbox("¿Exhibe la Etiqueta Identificativa (Placa DGT)?", value=False)
 
-if not tiene_registro:
-    denuncias.append({
-        "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
-        "codigo_dgt": "VEH 22 B-2-5B",
-        "cuantía": "100 €",
-        "reducido": "50 €",
-        "inmoviliza": "NO"
-    })
-
-if not tiene_etiqueta:
-    denuncias.append({
-        "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) de la DGT",
-        "codigo_dgt": "VEH 22 B-2-5C",
-        "cuantía": "80 €",
-        "reducido": "40 €",
-        "inmoviliza": "NO"
-    })
+    # Evaluación de jerarquía para pre-2024
+    if not tiene_registro:
+        denuncias.append({
+            "concepto": "No inscribir el VMP en el Registro Nacional de Vehículos Ligeros",
+            "codigo_dgt": "VEH 22 B-2-5B",
+            "cuantía": "100 €",
+            "reducido": "50 €",
+            "inmoviliza": "NO"
+        })
+    elif not tiene_etiqueta:
+        denuncias.append({
+            "concepto": "No disponer o no exhibir la etiqueta identificativa (placa) en VMP inscrito",
+            "codigo_dgt": "VEH 22 B-2-5C",
+            "cuantía": "80 €",
+            "reducido": "40 €",
+            "inmoviliza": "NO"
+        })
 
 # --- BLOQUE 3: SEGURO OBLIGATORIO ---
 st.markdown("---")
