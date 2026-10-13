@@ -37,13 +37,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Imagen del patinete compacta (180px) y centrada
-col_left, col_img, col_right = st.columns([1, 1.2, 1])
-with col_img:
-    if os.path.exists("patipoli.jpg"):
-        st.image("patipoli.jpg", width=180)
-    elif os.path.exists("patipoli.jpeg"):
-        st.image("patipoli.jpeg", width=180)
+# Imagen del patinete a tamaño completo
+if os.path.exists("patipoli.jpg"):
+    st.image("patipoli.jpg", use_container_width=True)
+elif os.path.exists("patipoli.jpeg"):
+    st.image("patipoli.jpeg", use_container_width=True)
 
 st.info("📱 **Uso en Vía Pública**: Selecciona los parámetros detectados para obtener denuncias e inmovilización de forma automática.")
 
@@ -217,7 +215,7 @@ infracciones_conducta = st.multiselect(
         "Fallo / Deficiencia en Sistema de Frenado (Anexo XXI - VEH 22 B-2-5E)",
         "Carecer o no funcionar Timbre / Dispositivo sonoro o Pata de Cabra (Anexo XXI - VEH 22 B-2-5F)",
         "Conductor menor de 15 años de edad (CIR 155 3 5A)",
-        "Sin Casco de protección homologado o mal abrochado (CIR 118 3 5D)",
+        "Sin Casco de protección homologado o mal abrochado (Art. 104.1.c LTSV / CIR 118 3 5D)",
         "Sin prenda/elemento luminoso o reflectante visible a 150m de noche (CIR 118 3 5E)",
         "Circular por Vía Interurbana, Travesía o Túnel prohibido (CIR 038 4 5B)",
         "Circular de noche/túnel sin alumbrado obligatorio (CIR 155 5 5A)",
@@ -258,12 +256,14 @@ for inf in infracciones_conducta:
         })
     elif "Sin Casco" in inf:
         denuncias.append({
-            "concepto": "Conducir VMP sin utilizar adecuadamente abrochado el casco de protección homologado",
+            "concepto": "Conducir VMP sin utilizar adecuadamente abrochado el casco de protección homologado o certificado",
             "codigo_dgt": "CIR 118 3 5D (Art. 118.3 RGCir)",
             "cuantía": "200 €",
             "reducido": "100 €",
-            "inmoviliza": "NO"
+            "inmoviliza": "SÍ"
         })
+        requiere_inmovilizacion = True
+        motivos_inmovilizacion.append("Conducir VMP sin casco de protección obligatorio (Art. 104.1.c LTSV).")
     elif "reflectante" in inf:
         denuncias.append({
             "concepto": "Conducir VMP de noche o baja visibilidad sin elemento luminoso o reflectante (150m)",
