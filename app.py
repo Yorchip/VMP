@@ -4,7 +4,7 @@ import os
 # 1. Configuración de página para móviles
 st.set_page_config(
     page_title="VMP Policial - Asistente de Intervención",
-    page_icon="RS",
+    page_icon="🚔",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -68,6 +68,7 @@ sillin_sin_autoeq = st.checkbox("¿Dispone de asiento o sillín SIN sistema de a
 es_ciclo_motor_l1ea = False
 tiene_acelerador_directo = False
 tiene_pedales = False
+epac_deslimitada_sin_gatillo = False
 
 if sillin_sin_autoeq:
     tiene_pedales = st.checkbox("¿Dispone de pedales de tracción humana?")
@@ -75,8 +76,8 @@ if sillin_sin_autoeq:
         potencia_gt_250w = st.checkbox("¿La potencia nominal continua supera los 250 W (hasta 1.000 W)?")
         funciona_sin_pedalear = st.checkbox("¿Dispone de gatillo / acelerador directo (el motor funciona sin necesidad de pedalear)?")
         
-        # CASO 1: EPAC / Pedelec Estándar (<= 250W, sin acelerador directo, corte a <= 25 km/h)
-        if not potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0:
+        # CASO 1: EPAC / Pedelec Estándar (<= 250W, sin acelerador directo, corte a <= 25 km/h, no trucada)
+        if not potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0 and not trucado:
             st.success("🚲 **CATEGORÍA DETERMINADA: BICICLETA DE PEDALEO ASISTIDO (EPAC / Pedelec - Norma UNE-EN 15194)**")
             st.markdown("""
             * **Definición**: Bicicleta equipada con motor auxiliar de potencia nominal continua ≤ 250 W, cuya asistencia se interrumpe a los 25 km/h o si se deja de pedalear.
@@ -87,7 +88,7 @@ if sillin_sin_autoeq:
             st.stop()  # Parada inmediata para EPAC
 
         # CASO 2: Ciclo de Motor (Categoría L1e-A) (> 250W a 1000W, sin acelerador directo, asistencia <= 25 km/h)
-        elif potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0:
+        elif potencia_gt_250w and not funciona_sin_pedalear and velocidad_max <= 25.0 and not trucado:
             es_ciclo_motor_l1ea = True
             st.warning("🛵 **CATEGORÍA DETERMINADA: CICLO DE MOTOR (Categoría L1e-A - Reglamento UE 168/2013)**")
             st.markdown("""
@@ -104,6 +105,9 @@ if sillin_sin_autoeq:
             if funciona_sin_pedalear:
                 tiene_acelerador_directo = True
                 st.warning("⚠️ **Pérdida de categoría EPAC / L1e-A**: Al disponer de acelerador directo/gatillo que acciona el motor sin necesidad de pedalear, excede la categoría de bicicleta asistida.")
+            elif velocidad_max > 25.0 or trucado:
+                epac_deslimitada_sin_gatillo = True
+                st.warning("⚠️ **EPAC DESLIMITADA / TRUCADA FUERA DE LA NORMA**: Bicicleta con pedaleo asistido deslimitada que continúa asistiendo por encima de 25 km/h sin disponer de gatillo. No es una EPAC legal ni un ciclomotor de fábrica, sino un vehículo deslimitado fuera de la norma no autorizable para circular.")
 
 # Evaluación de Exceso de Prestaciones / Ciclomotor / Trucaje
 exceso_prestaciones = velocidad_max > 25.0 or trucado or (sillin_sin_autoeq and not es_ciclo_motor_l1ea)
@@ -113,45 +117,45 @@ if exceso_prestaciones:
     tipo_vehiculo_asimilado = "CICLOMOTOR (Categoría L1e-B)" if es_ciclomotor else "MOTOCICLETA (Categoría L3e)"
     permiso_requerido = "AM" if es_ciclomotor else "A1 / A2 / A"
 
-    if trucado:
-        # VMP MANIPULADO / TRUCADO: SÍ CONTINUAMOS LAS PREGUNTAS DE VMP/VPL
-        st.error("🚨 **RESULTADO TÉCNICO: VMP MANIPULADO / TRUCADO (EXCEDE LA NORMA)**")
+    if trucado or epac_deslimitada_sin_gatillo:
+        # VEHÍCULO MANIPULADO / TRUCADO / EPAC DESLIMITADA
+        st.error("🚨 **RESULTADO TÉCNICO: VEHÍCULO MANIPULADO / TRUCADO / DESLIMITADO (FUERA DE LA NORMA)**")
         st.markdown(f"""
-        * **Situación**: Se trata de un VMP que ha sido **deslimitado, trucado o manipulado** (mediante menú oculto, botón, interruptor o app).
-        * **Sanción por Manipulación**: Denuncia por circular con vehículo no autorizable / manipulado que ofrece prestaciones superiores a VMP (**Opción 1.1.5B - 500 € + Inmovilización**).
-        * **Equiparación a Ciclomotor**: Al exceder la norma por trucaje, proceden las denuncias de ciclomotor / vehículo a motor que correspondan:
+        * **Situación**: Se trata de un VMP o EPAC que ha sido **deslimitado, trucado o manipulado** (excediendo los 25 km/h o sus especificaciones de fábrica).
+        * **Sanción por Manipulación**: Denuncia por circular con vehículo no autorizable / manipulado que ofrece prestaciones superiores (**Opción 1.1.5B - 500 € + Inmovilización**).
+        * **Comprobar si puede ser equiparable a Ciclomotor**: Al exceder la norma por trucaje o deslimitación, procede **comprobar si puede ser equiparable a ciclomotor / vehículo a motor** según inspección técnica o pericial:
           - Carecer de Certificado de Circulación / Homologación de Ciclomotor.
           - Carecer de Matrícula.
           - Carecer de Seguro Obligatorio.
-          - Carecer de Permiso de Conducir clase {permiso_requerido} (y posible vía penal por Art. 384 CP).
-        * **Continuación del Asistente**: **Se continúa con las preguntas de Certificado, Registro RNV y Pegatina**, ya que el vehículo podría estar legalmente inscrito y disponer de tarjeta/etiqueta VMP a pesar de haber sido trucado.
+          - Carecer de Permiso de Conducir clase {permiso_requerido} (comprobar posible vía penal por Art. 384 CP).
+        * **Continuación del Asistente**: **Se continúa con las preguntas de Certificado, Registro RNV y Pegatina**, ya que el vehículo podría haber estado registrado previamente.
         """)
         
         denuncias.append({
-            "concepto": "Circular con vehículo no autorizable que ofrece prestaciones superiores a VMP por trucaje/manipulación",
+            "concepto": "Circular con vehículo no autorizable que ofrece prestaciones superiores por trucaje/manipulación/deslimitación",
             "codigo_dgt": "Opción 1.1.5B (Instrucción 2019/S-149)",
             "cuantía": "500 €",
             "reducido": "250 €",
             "inmoviliza": "SÍ"
         })
         requiere_inmovilizacion = True
-        motivos_inmovilizacion.append("Vehículo no autorizable (VMP manipulado / deslimitado / trucado).")
+        motivos_inmovilizacion.append("Vehículo no autorizable (Manipulado / deslimitado / trucado fuera de la norma).")
 
         observaciones_penales.append(
-            f"OBSERVACIÓN TÉCNICA / PENAL: VMP manipulado/trucado (Velocidad: {velocidad_max} km/h). Equiparable a {tipo_vehiculo_asimilado}. Proceden denuncias por carecer de certificado/homologación de ciclomotor, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, se requiere medición en dinamómetro e informe pericial para atestado por Art. 384 CP."
+            f"OBSERVACIÓN TÉCNICA / PENAL: Vehículo manipulado/trucado/deslimitado (Velocidad: {velocidad_max} km/h). Comprobar si puede ser equiparable a {tipo_vehiculo_asimilado}. Proceden verificar denuncias por carecer de certificado/homologación de ciclomotor, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, se requiere medición en dinamómetro e informe pericial para valorar atestado por Art. 384 CP."
         )
     else:
-        # CICLOMOTOR / MOTOCICLETA DE ORIGEN (NO TRUCADO): NO SE CONTINÚA CON PREGUNTAS VMP/VPL
+        # VEHÍCULO DE ORIGEN NO VMP (NO TRUCADO): NO SE CONTINÚA CON PREGUNTAS VMP/VPL
         st.error(f"🚨 **CATEGORÍA DETERMINADA: {tipo_vehiculo_asimilado} (NO VMP)**")
         st.markdown(f"""
-        * **Situación**: Por sus características de fabricación (asiento/sillín {'con acelerador directo' if tiene_acelerador_directo else ''} o velocidad por diseño > 25 km/h), el vehículo no es un VMP, sino un **{tipo_vehiculo_asimilado}**.
-        * **Denuncias que proceden como Ciclomotor / Vehículo a Motor**:
+        * **Situación**: Por sus características de fabricación (asiento/sillín {'con acelerador directo' if tiene_acelerador_directo else ''} o velocidad por diseño > 25 km/h), el vehículo no es un VMP, sino que procede **comprobar si es equiparable a {tipo_vehiculo_asimilado}**.
+        * **Comprobar denuncias que procedan como Ciclomotor / Vehículo a Motor**:
           1. **Vehículo No Autorizable / Sin Homologación**: Opción 1.1.5B (500 € + Inmovilización).
           2. **Carecer de Certificado de Circulación / Homologación de Ciclomotor**.
           3. **Carecer de Matrícula** (placa amarilla).
           4. **Carecer de Seguro Obligatorio** de vehículos a motor (SDA).
           5. **Carecer de Permiso de Conducir** clase {permiso_requerido}.
-        * **Vía Penal (Art. 384 CP)**: Si el conductor carece de permiso, proceden diligencias/atestado por Delito contra la Seguridad Vial (exige informe pericial técnico y medición en dinamómetro certificado).
+        * **Vía Penal (Art. 384 CP)**: Si el conductor carece de permiso, valorar posible instrucción de diligencias/atestado por Delito contra la Seguridad Vial (exige informe pericial técnico y medición en dinamómetro certificado).
         """)
 
         denuncias.append({
@@ -172,7 +176,7 @@ if exceso_prestaciones:
         motivos_inmovilizacion.append(f"Vehículo equipado como {tipo_vehiculo_asimilado} sin homologar y falta de autorización.")
 
         observaciones_penales.append(
-            f"OBSERVACIÓN PENAL / TÉCNICA: Vehículo fabricado como {tipo_vehiculo_asimilado} no VMP. Proceden denuncias por carecer de certificado de circulación, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, se instruyen diligencias por Art. 384 CP con medición en dinamómetro."
+            f"OBSERVACIÓN PENAL / TÉCNICA: Vehículo fabricado como {tipo_vehiculo_asimilado} no VMP. Comprobar si puede ser equiparable a {tipo_vehiculo_asimilado} a efectos sancionadores y penales. Proceden denuncias por carecer de certificado de circulación, matrícula, seguro obligatorio y permiso de conducir clase {permiso_requerido}. De carecer de permiso, valorar diligencias por Art. 384 CP previa medición en dinamómetro."
         )
 
         # Mostrar resultado final e inmovilización para Ciclomotor no trucado, y NO seguir con VMP/VPL
@@ -183,7 +187,7 @@ if exceso_prestaciones:
             st.write(f"- {mot}")
 
         st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO EQUIPARADO A CICLOMOTOR (20647PLV)\nInmovilización: SÍ\n\n"
+        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO A VERIFICAR EQUIPARACIÓN A CICLOMOTOR (20647PLV)\nInmovilización: SÍ\n\n"
         for idx, d in enumerate(denuncias, 1):
             with st.expander(f"#{idx} [{d['codigo_dgt']}] - {d['cuantía']}"):
                 st.write(f"**Concepto**: {d['concepto']}")
@@ -475,7 +479,7 @@ else:
 
 if denuncias or observaciones_penales:
     st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-    resumen_texto = "ACTA DE INTERVENCIÓN VMP - POLICÍA LOCAL (20647PLV)\n"
+    resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO A VERIFICAR EQUIPARACIÓN A CICLOMOTOR (20647PLV)\n"
     resumen_texto += f"Inmovilización: {'SÍ' if requiere_inmovilizacion else 'NO'}\n\n"
 
     for idx, d in enumerate(denuncias, 1):
