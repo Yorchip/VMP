@@ -4,7 +4,7 @@ import os
 # 1. Configuración de página para móviles
 st.set_page_config(
     page_title="VMP Policial - Asistente de Intervención",
-    page_icon="🚔",
+    page_icon="RS",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -183,7 +183,7 @@ if exceso_prestaciones:
             st.write(f"- {mot}")
 
         st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO EQUIPARADO A CICLOMOTOR (M0647CAM)\nInmovilización: SÍ\n\n"
+        resumen_texto = "ACTA DE INTERVENCIÓN - VEHÍCULO EQUIPARADO A CICLOMOTOR (20647PLV)\nInmovilización: SÍ\n\n"
         for idx, d in enumerate(denuncias, 1):
             with st.expander(f"#{idx} [{d['codigo_dgt']}] - {d['cuantía']}"):
                 st.write(f"**Concepto**: {d['concepto']}")
@@ -475,7 +475,7 @@ else:
 
 if denuncias or observaciones_penales:
     st.subheader(f"Infracciones e Incidencias Registradas ({len(denuncias)}):")
-    resumen_texto = "ACTA DE INTERVENCIÓN VMP - POLICÍA LOCAL (M0647CAM)\n"
+    resumen_texto = "ACTA DE INTERVENCIÓN VMP - POLICÍA LOCAL (20647PLV)\n"
     resumen_texto += f"Inmovilización: {'SÍ' if requiere_inmovilizacion else 'NO'}\n\n"
 
     for idx, d in enumerate(denuncias, 1):
